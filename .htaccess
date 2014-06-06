@@ -1,0 +1,4 @@
+<IfModule mod_headers.c>
+   Header add Access-Control-Allow-Origin "http://192.168.0.25:70"
+   Header add Access-Control-Allow-Methods : GET,PUT,POST,DELETE
+ </IfModule>

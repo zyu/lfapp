@@ -1,0 +1,217 @@
+﻿<!DOCTYPE html>
+ 
+<html>
+ 
+  <head>
+ 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+ 
+    <meta name="apple-mobile-web-app-capable" content="yes">
+ 
+    <title>OpenLayers MapQuest Demo</title>
+ 
+    <style type="text/css">
+ 
+ 
+	html, body, #map {
+                margin: 0;
+				padding:0;
+                width: 100%;
+                height: 100%;
+            } 
+    </style>   
+ 
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+	
+	<link rel="stylesheet" href="Leaflet.draw/dist/leaflet.draw.css" />
+	<!-- <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script> -->
+	
+	
+	<script type="text/javascript" src="http://localhost/leaflet/build/deps.js"></script>
+	<script src="http://localhost/leaflet/debug/leaflet-include.js"></script>
+	<script src="/osmbuildings/dist/OSMBuildings-Leaflet.js"></script>
+	<script src="Leaflet.draw/dist/leaflet.draw.js"></script> 
+	
+	
+ 
+	<script src="lib/proj4-compressed.js"></script>
+	<script src="src/proj4leaflet.js"></script>
+  
+<script type="text/javascript">
+
+//var crs = L.CRS.proj4js('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs', new L.Transformation(0.5 / (Math.PI * L.Projection.Mercator.R_MAJOR), 0.5, -0.5 / (Math.PI * L.Projection.Mercator.R_MINOR), 0.5));
+  L.TileLayer.ChinaProvider = L.TileLayer.extend({
+
+    initialize: function(type, options) { // (type, Object)
+        this.providers = L.TileLayer.ChinaProvider.providers;
+
+        var parts = type.split('.');
+
+        var providerName = parts[0];
+        this.mapName = parts[1];
+        this.mapType = parts[2];
+
+        this._url  = this.providers[providerName][this.mapName][this.mapType];
+        options.subdomains =this.providers[providerName].Subdomains;
+		options = L.setOptions(this, options);
+      //  L.TileLayer.prototype.initialize.call(this,url,options);
+	  
+	  if (typeof options.subdomains === 'string') {
+			options.subdomains = options.subdomains.split('');
+		}
+    },
+	getTileUrl: function (coords) {
+	
+		var z = this._getZoomForUrl();
+		if(z <14){
+		return L.Util.template(this._url, L.extend({
+			r: this.options.detectRetina && L.Browser.retina && this.options.maxZoom > 0 ? '@2x' : '',
+			s: this._getSubdomain(coords),
+			x: coords.x,
+			y: this.options.tms ? this._tileNumBounds.max.y - coords.y : coords.y,
+			z: z//this._getZoomForUrl()
+		}, this.options));
+		}
+		if(z>13&&z<18)
+		{
+			this._url = this.providers['ZZhn'][this.mapName][this.mapType];
+			
+			return L.Util.template(this._url, L.extend({ 
+			x: coords.x,
+			y: this.options.tms ? this._tileNumBounds.max.y - coords.y : coords.y,
+			z: z//this._getZoomForUrl()
+		}, this.options));
+		}
+	},
+});  
+
+L.TileLayer.ChinaProvider.providers ={
+    TianDiTu : {
+        Normal: {
+            Map: "http://t{s}.tianditu.cn/DataServer?T=vec_w&X={x}&Y={y}&L={z}",
+            Annotion: "http://t{s}.tianditu.cn/DataServer?T=cva_w&X={x}&Y={y}&L={z}",
+        },
+        Satellite: {
+            Map: "http://t{s}.tianditu.cn/DataServer?T=img_w&X={x}&Y={y}&L={z}",
+            Annotion: "http://t{s}.tianditu.cn/DataServer?T=cia_w&X={x}&Y={y}&L={z}",
+        },
+        Terrain: {
+            Map: "http://t{s}.tianditu.cn/DataServer?T=ter_w&X={x}&Y={y}&L={z}",
+            Annotion: "http://t{s}.tianditu.cn/DataServer?T=cta_w&X={x}&Y={y}&L={z}",
+        },
+        Subdomains:['0','1','2','3','4','5','6','7']
+    },
+	ZZhn:{
+		Normal:{
+			Map:"http://map.hnchj.com/newmapserver4/tianditu/henansltile/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&layer=henansltile&format=image/png&style=Default&TileMatrixSet=Matrix_0&TileMatrix={z}&TileRow={y}&TileCol={x}",
+			Annotion:"http://map.hnchj.com/newmapserver4/tianditu/henansldmtile/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&layer=henansldmtile&format=image/png&style=Default&TileMatrixSet=Matrix_0&TileMatrix={z}&TileRow={y}&TileCol={x}"
+		},
+		Satellite: {
+            Map: "http://map.hnchj.com/newmapserver4/tianditu/henanyxtile/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&layer=henanyxtile&format=image/png&style=Default&TileMatrixSet=Matrix_0&TileMatrix={z}&TileRow={y}&TileCol={x}",
+            Annotion: "http://map.hnchj.com/newmapserver4/tianditu/henanyxdmtile/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&layer=henanyxdmtile&format=image/png&style=Default&TileMatrixSet=Matrix_0&TileMatrix={z}&TileRow={y}&TileCol={x}",
+        },
+		Subdomains:[]
+	},
+	//http://map.hnchj.com/newmapserver4/tianditu/henansltile/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&layer=henansltile&format=image/png&style=Default&TileMatrixSet=Matrix_0&TileMatrix=15&TileRow=13008&TileCol=26723
+    //http://map.hnchj.com/newmapserver4/tianditu/henansldmtile/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&layer=henansldmtile&format=image/png&style=Default&TileMatrixSet=Matrix_0&TileMatrix=15&TileRow=5213&TileCol=26585
+    MapABC:{
+        Normal:{
+            Map:'http://emap{s}.mapabc.com/mapabc/maptile?&x={x}&y={y}&z={z}'
+        },
+        Subdomains:["0","1", "2", "3"]
+    },
+    
+    GaoDe:{
+        Normal:{
+            Map:'http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+        },
+        Satellite:{
+            Map:'http://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            Annotion:'http://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}'
+        },
+        Subdomains:["1","2","3","4"]
+    }
+};
+
+L.tileLayer.chinaProvider= function(type, options) {
+    return new L.TileLayer.ChinaProvider(type, options);
+};
+ 
+function init(){
+ 
+	var nexrad = L.tileLayer.wms("http://192.168.0.17:8090/geoserver/zyf/wms", {
+		layers: 'zyf:j2respl',
+		tileSize:1024,
+		format: 'image/png', 
+		transparent: true, 
+		continuousWorld: true,
+		attribution: "居民地"
+	}) ;  
+	var normalm = L.tileLayer.chinaProvider('TianDiTu.Normal.Map',{maxZoom:18,minZoom:5}),
+        normala = L.tileLayer.chinaProvider('TianDiTu.Normal.Annotion',{maxZoom:18,minZoom:5}),
+		
+        imgm = L.tileLayer.chinaProvider('TianDiTu.Satellite.Map',{maxZoom:18,minZoom:5}),
+        imga = L.tileLayer.chinaProvider('TianDiTu.Satellite.Annotion',{maxZoom:18,minZoom:5});
+		
+		
+		hnnormalm = L.tileLayer.chinaProvider('ZZhn.Normal.Annotion',{maxZoom:18,minZoom:15});
+		hnnomala  = L.tileLayer.chinaProvider('ZZhn.Normal.Annotion',{maxZoom:18,minZoom:15});
+		
+		hnimgm    = L.tileLayer.chinaProvider('ZZhn.Satellite.Annotion',{maxZoom:18,minZoom:15});
+		hnimga    = L.tileLayer.chinaProvider('ZZhn.Satellite.Annotion',{maxZoom:18,minZoom:15});
+	var normal = L.layerGroup([normalm,normala]),
+		image = L.layerGroup([imgm,imga]);
+
+	var baseLayers = {
+		"地图":normal,
+		"影像":image,
+	}
+
+	var overlayLayers = {
+		"居民地":nexrad
+		//"河南":hnnormalm
+	}
+	 var crs = new L.Proj.CRS('EPSG:4490',
+		'+proj=longlat +ellps=GRS80 +no_defs',
+		{
+			resolutions: [0.703125, 0.3515625, 0.17578125, 0.087890625,
+								   0.0439453125, 0.02197265625, 0.010986328125, 0.0054931640625,
+								   0.00274658203125, 0.001373291015625, 0.0006866455078125, 0.00034332275390625,
+								   0.000171661376953125, 0.0000858306884765625, 0.00004291534423828125, 0.00002145767211914062,
+								   0.00001072883605957031, 0.000005364418029785155, 0.0000026822090148925775,
+								   0.00000134110450744628875, 0.000000670552253723144375
+			],
+			origin: [-180, 90]
+		});
+	var map = L.map("map",{
+		//crs:crs, 
+		layers:[normal], 
+		zoomControl:false
+	}).setView([34.69857,113.51331], 14);
+
+	L.control.layers(baseLayers,overlayLayers).addTo(map);
+	L.control.zoom({zoomInTitle:'放大', zoomOutTitle:'缩小'}).addTo(map);
+	 var drawControl = new L.Control.Draw({
+	  draw: { polyline:false, circle:false, marker:false }
+	});
+	map.addControl(drawControl);
+	map.setView([34.69857,113.51331], 13);
+	var osmb = new OSMBuildings(map);
+	map.on('draw:created', function (e) {
+		 
+	  var feature = e.layer.toGeoJSON();
+	  feature.properties = { color:'#ffcc00', height:4 };
+	  var geoJson = { type:'FeatureCollection', features:[feature] };
+	  osmb.setData(geoJson);
+	});
+	}
+</script>
+ 
+</head>
+ 
+<body onload="init()">
+    <div id="map"></div>
+ 
+ </body>

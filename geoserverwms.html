@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+ 
+<html>
+ 
+  <head>
+ 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+ 
+    <meta name="apple-mobile-web-app-capable" content="yes">
+ 
+    <title>OpenLayers MapQuest Demo</title>
+ 
+    <style type="text/css">
+ 
+ 
+	html, body, #map {
+                margin: 0;
+				padding:0;
+                width: 100%;
+                height: 100%;
+            } 
+    </style>   
+ 
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+	<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+	<script src="Iwmts.js"></script>
+	<script src="lib/proj4-compressed.js"></script>
+	<script src="src/proj4leaflet.js"></script>
+  
+<script type="text/javascript">
+
+//var crs = L.CRS.proj4js('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs', new L.Transformation(0.5 / (Math.PI * L.Projection.Mercator.R_MAJOR), 0.5, -0.5 / (Math.PI * L.Projection.Mercator.R_MINOR), 0.5));
+L.TileLayer.ChinaProvider = L.TileLayer.extend({
+
+    initialize: function(type, options) { // (type, Object)
+        var providers = L.TileLayer.ChinaProvider.providers;
+
+        var parts = type.split('.');
+
+        var providerName = parts[0];
+        var mapName = parts[1];
+        var mapType = parts[2];
+
+        var url = providers[providerName][mapName][mapType];
+        options.subdomains =providers[providerName].Subdomains;
+
+        L.TileLayer.prototype.initialize.call(this,url,options);
+    }
+});
+
+L.TileLayer.ChinaProvider.providers ={
+    TianDiTu : {
+        Normal: {
+            Map: "http://t{s}.tianditu.cn/DataServer?T=vec_w&X={x}&Y={y}&L={z}",
+            Annotion: "http://t{s}.tianditu.cn/DataServer?T=cva_w&X={x}&Y={y}&L={z}",
+        },
+        Satellite: {
+            Map: "http://t{s}.tianditu.cn/DataServer?T=img_w&X={x}&Y={y}&L={z}",
+            Annotion: "http://t{s}.tianditu.cn/DataServer?T=cia_w&X={x}&Y={y}&L={z}",
+        },
+        Terrain: {
+            Map: "http://t{s}.tianditu.cn/DataServer?T=ter_w&X={x}&Y={y}&L={z}",
+            Annotion: "http://t{s}.tianditu.cn/DataServer?T=cta_w&X={x}&Y={y}&L={z}",
+        },
+        Subdomains:['0','1','2','3','4','5','6','7']
+    },
+
+    MapABC:{
+        Normal:{
+            Map:'http://emap{s}.mapabc.com/mapabc/maptile?&x={x}&y={y}&z={z}'
+        },
+        Subdomains:["0","1", "2", "3"]
+    },
+    
+    GaoDe:{
+        Normal:{
+            Map:'http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+        },
+        Satellite:{
+            Map:'http://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            Annotion:'http://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}'
+        },
+        Subdomains:["1","2","3","4"]
+    }
+};
+
+L.tileLayer.chinaProvider= function(type, options) {
+    return new L.TileLayer.ChinaProvider(type, options);
+};
+function init(){
+	//var crs = L.CRS.proj4js('EPSG:4490','+proj=longlat +ellps=GRS80 +no_defs');
+	var crs = new L.Proj.CRS('EPSG:4490',
+	'+proj=longlat +ellps=GRS80 +no_defs',
+	{
+		resolutions: [0.703125, 0.3515625, 0.17578125, 0.087890625,
+		                       0.0439453125, 0.02197265625, 0.010986328125, 0.0054931640625,
+		                       0.00274658203125, 0.001373291015625, 0.0006866455078125, 0.00034332275390625,
+		                       0.000171661376953125, 0.0000858306884765625, 0.00004291534423828125, 0.00002145767211914062,
+		                       0.00001072883605957031, 0.000005364418029785155, 0.0000026822090148925775,
+		                       0.00000134110450744628875, 0.000000670552253723144375
+		],
+		origin: [-180, 90]
+	});
+	 
+	
+	//http://192.168.0.17:8090/geoserver/zyf/wms?LAYERS=zyf%3Abiggrid&STYLES=&FORMAT=image%2Fpng&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&SRS=EPSG%3A4490&BBOX=112.93196438253,34.248675957322,114.14729739725,35.022922858596&WIDTH=518&HEIGHT=330
+	//http://192.168.26.131:8090/geoserver/zyf/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=zyf%3Abiggrid&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=true&HEIGHT=256&WIDTH=256&SRS=EPSG%3A4490&BBOX=34.716796875,85.04733631224823,34.7607421875,85.0511287798066
+	  
+	
+	    var nexrad = L.tileLayer.wms("http://192.168.0.17:8090/geoserver/zyf/wms", {
+		layers: 'zyf:biggrid',
+		tileSize:1024,
+		format: 'image/png', 
+		transparent: true, 
+		continuousWorld: true,
+		attribution: "县区"
+	}) ;  
+	var size = 360;
+	//var resolutions = new Array(8);
+	var matrixIds = new Array(18);
+	for (var z = 0; z < 18; ++z) {
+	 // resolutions[z] = size / Math.pow(2, z);
+	  matrixIds[z]= {
+		identifier    : "" + z,
+		coef: size / Math.pow(2, z),
+		topLeftCorner : new L.LatLng(90,-180)
+		};
+ 
+	}
+	/*L.tileLayer.wmts('http://t0.tianditu.com/DataServer', {
+				maxZoom: 18, 
+				matrixIds:matrixIds,
+				mapType: "vec",
+				attribution: ''
+			}).addTo(map);*/
+			
+	var normalm = L.tileLayer.chinaProvider('TianDiTu.Normal.Map',{maxZoom:18,minZoom:5}),
+    normala = L.tileLayer.chinaProvider('TianDiTu.Normal.Annotion',{maxZoom:18,minZoom:5}),
+    imgm = L.tileLayer.chinaProvider('TianDiTu.Satellite.Map',{maxZoom:18,minZoom:5}),
+    imga = L.tileLayer.chinaProvider('TianDiTu.Satellite.Annotion',{maxZoom:18,minZoom:5});
+
+	var normal = L.layerGroup([normalm,normala]),
+		image = L.layerGroup([imgm,imga]);
+
+	var baseLayers = {
+		"地图":normal,
+		"影像":image,
+	}
+
+	var overlayLayers = {
+		"县区":nexrad
+	}
+	/*
+var map = L.map('map',	
+	{
+		crs:crs,
+		continuousWorld: true,
+		worldCopyJump: false
+	}
+	);*/
+	var map = L.map("map",{
+		center:[34.69857,113.51331],
+		zoom:13,
+		layers:[normal], 
+		zoomControl:false
+	});
+
+	L.control.layers(baseLayers,overlayLayers).addTo(map);
+	L.control.zoom({zoomInTitle:'放大', zoomOutTitle:'缩小'}).addTo(map);
+	 
+	map.setView([34.69857,113.51331], 13);
+	}
+</script>
+ 
+</head>
+ 
+<body onload="init()">
+    <div id="map"></div>
+ 
+ </body>
